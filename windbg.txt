@@ -1,0 +1,534 @@
+1、用户态栈默认大小为1MB，默认内核态栈大小为：
+   在x86系统中，内核栈的初始大小是12KB，在X64 CPU（intel 64和AMD 64）的系统中，内核态栈的初始大小是24KB，在安腾（Itanium）处理器的系统中，内核态栈的大小是32KB。
+2、bp kernelbase!CreateFileW+0x5 "dU /c 50 poi(@ebp+8);gc"  dU命令是以Unicode方式显示CreateFile函数的第一个参数所代表的文件名。
+   bp kernelbase!CreateFileW+0x5 "dU /c 50 poi(@ebp+8);gu;r eax;gc" "gu;r eax"目的是执行完CreateFileW函数，然后显示出函数的返回值，以便知道函数的执行情况，是成功或者失败。
+   bp kernelbase!CreateFileW+0x5 "dU /c 50 poi(@ebp+8);gu;r eax;.if(@eax<0){.echo hit}.else{gc}" 失败时中断
+   bp kernelbase!OpenFileMapping+5 "kv 10;dU /c 30 poi(@ebp+10)" dU命令是显示第三个参数所代表的文件映射对象名称
+   bp msvcr80!_vsnwprintf_s+0x19 "dU poi(@ebp+8);kv 3;gc" 打印参数1 包含的字符串，显示包含3个栈帧的
+   bp kernel32!ReadProcessMemory+0x5 ".if poi(@ebp+c)=0x3a0000 {} .else {kv1;g}"
+   其中的0x3a0000是lpvAddr的值，需要根据VirtualAlloc函数的返回值而调整
+   bp intelppm!MWaitIdle+0xac ".echo mwait sleep; r eax; r ecx; db fs:51 l1; gc"
+   打印出执行MWaitIdle函数的CPU编号
+3、KPL 2000 显示函数参数 kvnL 1000
+4、~*e ? @$tid;!gle 针对进程中的每个线程逐一显示线程ID和Last Error值
+   ~*e .ttime 列出每个线程的运行时间
+   ~0s 切换到UI线程
+   ~*e ? @$tid;.ttime 逐一显示线程ID和运行时间
+5、加载sos扩展命令模块，执行.loadby sos mscorwks，然后执行!clrstack观察托管方法的调用经过。
+   sos扩展命令：!threads 查看线程信息；!do (dumpobject) 显示异常对象的详情
+   !ip2md address 查找这个地址对应的托管方法
+   sxe ld mscorwks.dll 调试进程加载mscorwks.dll模块的事件时中断下来。
+   .loadby sos mscorwks 加载与mscorwks模块相同位置的sos扩展模块
+   .chain 观察已经加载了的扩展模块
+   !help 显示sos的帮助信息
+   !bpmd <module name><method name> 对托管代码设置断点
+   !bpmd -md <MethodDesc> 
+   MethodDesc 可以通过!name2ee <module name><method name> 来得到
+   !mbp Program.cs 11 源代码设置断点，包含在SOSEX的扩展模块，需从网上下载，放入windbg的winext目录
+6、.ecxr 访问记录异常信息的数据块
+7、ub 反向反汇编
+8、poi(address) 获取函数指针指向的内容
+9、uf RrlLeaveCriticalSection 反汇编整个函数
+10、!cs 列出进程中的所有关键区
+11、对于分析系统挂死问题，寻找突破口的常用方法：
+ 	1、是执行!pcr来观察处理器控制区
+ 	2、!locks 寻找可能存在的内核对象死锁
+12、!vtop 0 address 线性地址所对应的物理地址
+   !arbiter 2 列出系统中物理地址的分配情况
+13、热键触发崩溃 
+ 	这组按键的默认定义是按下右侧的ctrl键后连按两次Scroll Lock键.默认是禁止的，需要在注册表中增加或者修改如下键值来启用，重启后生效。   位置：HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\i8042prt\Parameters
+ 	键值名称:CrashOnCtrlScroll
+ 	键值类型:REG_DWORD
+ 	取值：1 启用, 0 禁止
+14、.thread /p tid 将场景切换到当前线程
+	!thread tid 查看线程的情况
+15、!drvobj driverName 查看驱动的更多信息
+    !devstack _DEVICE_OBJECT 查看设备栈信息
+    !devnode 0 1 显示包含系统中所有设备的设备树
+16、循环命令 recx=poi(ecx);r ecx; z(ecx!=0) 把ecx值所在地址的值赋值给ECX，然后显示一下ECX的值
+	反复重复这个操作，直到ECX为0。其中z(n)是循环的条件
+17、ACPI
+	只能使用check版本进行调试
+	x acpi!gDebug* 如果有符号存在，就是check版本的ACPI
+	!amli debugger  预约amli调试器，没有看到错误消息就表示成功
+	? <cmd>          显示帮助信息
+	bc               清除断点
+	bd       禁止断点
+	be       启用断点
+	bl       列出断点
+	bp       设置断点
+	cl       清除事件日志
+	Dl       显示(dump)事件日志
+	dc       显示对象统计表(object count table)
+	dh <addr> 显示堆
+	ds /v <addr>     显示栈
+	dns /s <namestr> 显示命名空间(name space)
+	do <addr>        显示对象
+	find <NameSeg>   寻找命名空间中的对象
+	g                继续执行
+	i <port>         从端口读字节
+	iw <port>        从端口读字
+	id <port>              双字
+	lc               列出上下文结构
+	ln <methodName>  显示最近的方法
+	notify <obj><value> 通知命名空间中的对象
+	o <port><byte>    输出字节
+	ow <port><byte>        字
+	od                     双字
+	p                  单步跟踪
+	q                  退出到内核调试器
+	r <context>        显示上下文
+	run <methodname>   运行指定的方法
+	set [traceon]      设置选项
+	t                  单步跟踪(步入)
+	trace [trigon]     设置追踪模式和选项
+	u <MethodName>     反编译
+	18、r     显示通用寄存器
+	rdmsr,wrmsr MSR寄存器
+	ib/iw/id   读取IO端口
+	ob/ow/od 写IO端口
+	!apic 显示CPU内部的中断控制器寄存器
+	!idt 查看中断描述符表
+	!pci 查看PCI总线上的设备
+	!pcr 显示PCR中的关键信息
+19、sub ebp,40h
+	push ebx
+	push esi
+	push edi
+	lea edi,[ebp-40h]
+	mov ecx,10h
+	mov eax,0cccccccch
+	rep stos dword ptr es:[edi]
+	最上面的减法指令是把栈指针指向低地址方向调整，相当于分配一段空间给当前函数中的局部变量使用。
+	接下来的3个push语句是把EBX,ESI和EDI这3个寄存器的值保存到栈上，防止当前函数破坏了它们的值，
+	根据约定，返回到父函数时这几个寄存器的值应该保持不变。
+	在下面的4条指令把刚刚分配的变量区全部填充为0xcc，也是INT 3指令的机器码，
+	lea指令是把这段空间的起始地址放到EDI寄存器
+	第一个mov指令是把空间的长度放入ecx寄存器
+	第二个mov指令是把填充内容放入eax寄存器
+	最后的rep stos指令是具有循环功能的串指令，它把EAX的值存入EDI指向的内存，然后自动递增EDI，递减ECX
+	函数的末尾，会调用栈指针来释放栈空间，比如： add esp,40h
+	实现栈平衡
+20、ESP 指向栈顶
+	EBP 扩展的基址指针，指向栈空间的基准地址，在同一个函数中，EBP的值是保持不变的
+	通常，一个函数的入口处将当时的EBP值压入堆栈，然后把ESP（栈顶）值赋给EBP，这样EBP中的地址就是进入本函数时的栈顶地址，
+	这一地址上面（小地址方向）的空间便是这个函数将要使用的栈空间，它下面（大地址方向）是父函数使用的空间，
+	如此设置EBP后，便可以使用EBP加正数偏移来引用父函数的内容，使用EBP加负数偏移来引用本函数的局部变量，
+	比如EBP+4指向的是call指令压入的函数返回地址；EBP+8是父函数压在栈上的第一个函数，EBP+0xC是第二个参数
+	ebp-4是第一个局部变量的起始地址
+	可以通过直接观察EBP附近的内存来观察函数返回地址和参数信息
+21、fs寄存器
+	CPU运行在内核态（Ring 0）时，指向的是当前CPU的处理器控制器（PCR），即KGDT_R0_PCR
+	CPU运行在用户体验时，FS寄存器指向的是当前线程的线程环境块（TEB），即KGDT_R3_TEB
+22、TSS(Task State Segment)任务状态段
+	windows创建少数几个TSS， KGDT_TSS、KGDT_DF_TSS和KGDT_NMI_TSS
+	KGDT_DF_TSS 当CPU发生双重失误异常时使用的
+	KGDT_NMI_TSS 当发生不可屏蔽中断时使用的
+	KGDT_TSS 所有普通线程所共享的，它的内容随着线程的切换而更新
+	在TSS中，偏移为4和8的位置分别记录着当前线程的内核态栈的栈顶偏移和段选择子内容
+	使用!idt -a 观察IDT，可以看到2号和8号表项是两个任务选择子，它们指向KGDT_NMI_TSS和KGDT_DF_TSS
+22、与IA32_GS_BASE密切相关的还有一个叫IA32_KERNEL_GSBASE的MSR寄存器
+	当CPU在用户态执行时，GS对应的是TEB，在内核态执行时对应的是PCR
+	23、x modename!* 列出模块中的所有符号
+	ba w4 name   数据访问断点
+	~0s 切换到主线程
+	uf modename   显示整个模块的代码
+	对于一个参数的函数跳转，我们需要在栈上模拟参数和函数的返回地址，两个内容需8个字节
+	因此执行 r esp=@esp-8 调整栈指针
+	执行 ed @esp @eip     将目前的程序指针值放到栈顶，做为函数的返回地址
+	执行 r eip=ModerName!函数名 
+	执行g
+24、开关PC喇叭
+	ib 0x61 读出端口0x61的当前内容
+	ob 0x61 30|3 把读到的低三位置为1
+	ob 0x61 30 停止
+25、windows引导
+	MBR中的代码会在分区表中寻找活动的分区，找到后，使用INT 13h将活动的引导扇区加载到内存中，
+	加载成功后，将执行权移交过去。按照惯例，引导扇区被加载到0x7C00这个内存位置，
+	所有MBR代码通常先把自己复制到0x600开始的512字节
+	然后加载操作系统的加载程序(OS Loader)
+	切换工作模式
+	以vist为例：
+	引导管理器程序是BootMgr.exe，内部既有16位代码又有32位代码
+	16位代码先执行，完成基本的文件验证后，会切换到保护模式，并把32为代码映射到0x400000开始的内存区，
+	然后把控制权移交给32位代码的起始函数BmMain。此时观察CR0寄存器，可以看到代表保护模式的位0已经为1.
+	r cr0
+	cr0=00000013
+	但是代表分页机制的位31为0，说明没有启用分页。观察代码段和数据段的段描述符
+	dg cs  
+	dg ds
+	可见它们的基地址都是0，边界都是0xffffffff，说明cpu运行在基于段机制的平坦模式
+	分别用dd命令和!dd观察同一个地址值
+	dd idtr l4
+	!dd idtr l4
+	显示的内容是一样的，这说明线性地址与它所对应的物理地址是相等的。
+	休眠支持
+	在执行BlImgQueryCodeIntegrityBootOptins和BmFwVerifySelfIntegrity函数对自身的完整性做进一步检查后,
+	BootMgr会调用BmResumeFromHibernate检查是否需要从休眠中恢复，如果需要，那么它会加载WinResume.exe,
+	并把控制权移交给它。
+	显示启动菜单
+	BootMgr会从系统的引导配置数据(Boot Configuration Data)
+	执行用户选择的启动项
+	当用户选择一个启动项后，如果是windows xp，会加载NTLDR来启动它们，如果是windows vista，会加载WinLoad.exe.
+	在成功加载WinLoad.exe后，BootMgr会为其做一系列准备，包括启用新的GDT和IDT，然后把控制权移交给WinLoad.在x86平台中，完成这一任务的是Archx86TransferTo32BitApplicationAsm函数。
+	加载系统核心文件
+	WinLoad的主要任务是把操作系统内核加载到内存，并为它的运行做准备。
+	首先是启用CPU的分页机制
+	然后初始化自己的支持库，如果启用了引导调试支持，那么它会初始化调试引擎
+	接下来WinLoad会读取启动参数，决定是否显示高级启动菜单，高级菜单中含有以安全模式启动等选项，也叫windows Error Recovery
+	接下来要读取和加载注册表的System Hive，负责这项工作的是OslpLoadSysTemHive函数
+	然后开始核心任务，加载操作系统的内核文件和引导类型的设备驱动程序。
+	它首先加载ntoskrnl.exe，这个文件包含了Windows系统的内核和执行体
+	接下来加载的是硬件抽象层模块HAL.dll，支持调试的KDCOM.DLL，以及它们所依赖的模块
+	其中，PSHED.dll用于支持WHEA（windows Hardware Error Architecture）
+	Hal.dll是硬件抽象层模块
+	Bootvid.dll用于引导期间和发生蓝屏时的显示
+	Kdcom.dll用于支持内核调试
+	Clfs.sys用于支持日志的内核模块
+	Ci.dll用于检测模块的完整性的(code integrity)
+	加载好系统模块后，winload还需要加载引导类型(Boot Type)的设备驱动程序，引导类型的驱动程序是由winload在这一阶段加载的
+	完成模块加载后，winload开始准备把执行权移交给内核，包括为内核准备新的GDT和IDT(OslArchpKernelSetupPhase0)还有建立内存
+	映射(OslBuildKernelMemoryMap)等。
+	所有准备工作做完后，winload调用OslArchTransferToKernel函数把供内核使用的GDT和IDT地址加载到CPU中
+	然后调用内核的入口函数，正式把控制权移交给内核。
+	如果要启用BootMgr中的调试引擎，那么在管理员权限的控制台窗口中执行如下命令：
+	bcdedit /set {bootmgr} bootdebug on
+	bcdedit /set {bootmgr} debugtype serial
+	bcdedit /set {bootmgr} debugport 1
+	bcdedit /set {bootmgr} baudrate 115200
+	如果要启用winload程序中的调试引擎，那先找到所对应的引导项的GUID值，然后执行如下命令：
+	bcdedit /set {GUID} bootdebug on
+	在vista之前，NTLDR是windows操作系统的加载程序，只有checked版本的NTLDR才支持调试
+26、入口函数
+	windows程序的入口函数地址是登记在可执行文件的头结构当中，也就是IMAGE_OPTIONAL_HEADER结构的AddressOfEntryPoint字段。
+	内核文件的入口函数也如此
+	lm a nt 显示nt在内存中的起始地址，起始处是一个DOS头
+	dt nt!_IMAGE_DOS_HEADER address     其中e_lfanew字段的值代表新的NT类型可执行文件的头结构的起始偏移地址
+	dt nt!_IMAGE_NT_HEADERs address+e_lfanew  其中OptionalHeader字段是_IMAGE_OPTIONAL_HEADER结构
+	dt _IMAGE_OPTIONAL_HEADER -y Add* address+e_lfanew+0x18  显示出AddressOfEntryPoint字段的值
+	上面显示的AddresOfEntryPoint字段的值便代表着内核文件的入口函数在模块中的偏移，加上模块的基地址便可以得到入口函数的线性地址，
+	使用ln命令查找这个地址对应的符号，这表明入口地址处的函数名为KiSystemStartup,它是NT内核一直使用的入口函数
+	也可以使用!dh address -f 显示入口地址
+	当OS Loader调用KiSystemStartup时，它将启动选项以一个名为LOADER_PARAMETER_BLOCK的数据结构传递给KiSystemStartup
+27、内核初始化
+	KiSystemStartup函数所做的主要工作有：
+	调用HAlInitializeProcessor()初始化CPU
+	调用KdInitSystem初始化内核调试引擎
+	调用KiInitializeKernel开始内核初始化，这个函数会调用KiInitSystem来初始化系统的全局数据结构，
+	调用KeInitializeProcess创建并初始化Idle进程，调用KeInitializeThread初始化Idle线程
+28、执行体的阶段0初始化
+	在KiInitializeKernel函数完成基本的内核初始化后，它会调用ExpInitializeExecutive()开始初始化执行体。
+	每个执行体会有两次初始化的机会，第一次通常是做不依赖其它执行体的基本初始化，第二次做可能依赖其它执行体的动作
+	通常把前者叫阶段0初始化，后者叫阶段1初始化。
+	ExpInitializeExecutive是阶段0的总导演，调用MmInitSystem构建表和内存管理器的基本数据结构，调用ObInitSystem建立名称空间，
+	调用SeInitSystem初始化令牌（token）对象，调用PsInitSystem对进程管理器做阶段0初始化，调用PpInitSystem让即插即用管理器初始化设备链表
+	进程管理器的阶段0初始化，它所做的主要动作有：
+	定义进程和线程对象类型
+	建立记录系统中所有进程的链表结构，并将这个链表的头结构地址记录到全局变量PsActiveProcessHead.这一步完成后，我们才能在调试器中通过!process命令观察进程列表
+	创建第一个进程对象PsIdleProcess，并命名为Idle,即Idle进程
+	创建系统进程和线程，并将Phase1Initialization函数做为线程的起始地址
+29、执行体的阶段1初始化
+	调用KeStartAllProcessors()初始化所有CPU。这个函数会构建并初始化好一个处理器状态结构，然后调用硬件抽象层的HalStartNextProcessor函数将这个结构赋给一个新的CPU。新的CPU仍是从KiSystemStartup开始执行。
+	再次调用KdInitSustem函数，并且调用KdDebuggerInitialize1来初始化内核调试通信扩展DLL(KDCOM.dll等0)
+	调用IO管理器的阶段1初始化函数IoInitSystem做设备枚举和驱动加载工作。
+	对于多cpu的系统，每个cpu都会从内核的入口处开始执行，都会执行KiInitializeKernel这样的内核初始化函数和ExpInitializeExecutive这样的阶段0初始化函数，但只有第一个cpu会执行其中的所有初始化逻辑，包括全局性的初始化，其它cpu只执行单个cpu相关的部分
+	全局变量KeNumberProcessors的值刚好是当前的CPU号。
+	在执行体的阶段1初始化结束前，Phase1Initialization会创建第一个使用文件创建的进程，即会话管理器进程(SMSS.exe)。会话管理器会初始化windows子系统，创建windows子系统进程和登录进程(winlogon.exe)
+	创建会话管理器进程（smss）
+	根据全局变量NtInitialUserProcessBuffer得到会话管理器程序的路径和文件名，如果创建进程失败，那么会发起0x6f号蓝屏，
+	如果smss进程意外退出了，Phase1Initialization会发起0x71号蓝屏
+30、建立环境子系统
+	SMSS在完成自身的初始化工作后，会创建一个\SmApiPort的LPC端口对象，用于对外提供服务。切换会话和建立新会话的请求都是通过这个端口发送给SMSS的。
+	接下来smss完成注册表中为其安排的任务，主要有两类：
+	1、完成悬而未决的文件删除和改名任务。HKLM\System\CurrentControl\Control\Session Manager下面的PendingFileRenameOperations子键用来存放需要删除的文件清单。杀毒软件和反删除软件都经常使用这个子键来删除难以直接删除的病毒程序和当时正在使用的模块
+	2、执行BootExecute子键下定义的命令，通常定义的是磁盘检查程序
+	接下来SMSS建立虚拟内存机制所需的页面交换文件(Paging file)
+	再之后，SMSS会开始建立环境子系统(Enviroment Subsystem)，子系统的定义在SubSystems子键下。于是，SMSS会加载windows子系统的内核部分(win32k.sys)。
+	然后根据SubSystems子键下windows键值得内容来创建windows子系统的服务器进程(csrss.exe)。
+31、创建窗口站和桌面
+	建立windows子系统后，smss会创建另一个关键的进程：winlogon，它是系统中负责安全登录工作的核心部件，掌控者登录、重启和关机等重要的系统行为。
+	winlogon首先创建0号窗口站(winstat0)和默认的桌面对象(Defalut Desktop).
+	winlogon需要调用win32k的NtUserCreateWindowStation函数创建窗口站的过程。
+	winlogon会调用NtUserCreateDesktop来创建桌面，首先创建一个名为winlogon的桌面给自己使用，
+	然后创建一个名为Default的桌面给应用程序使用
+	在创建桌面后，winlogon会调用SetActiveDesktop函数将供自己使用的桌面设置为当前的活动桌面，于是登录界面显示
+	当用户登出或者锁定屏幕，winlogon都会将自己的桌面切换到前台(设置为活动的)
+	创建桌面后，winlogon会创建用于管理系统服务的服务管理器(services.exe)和本地安全认证子系统(Lsass.exe)
+32、用户登录
+	当用户登录信息被验证通过后，winlogon会将应用程序桌面激活。
+	接下来，winlogon会引发用户初始化动作，也就是执行注册表中以下键值的定义
+	HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\UserInit
+	通常这个键值的内容是： c:\windows\system32\userinit.exe
+	userinit启动后，会运行HKCU\SOFTWARE\Policies\Microsoft\Windows\System\script和
+	HKLM\SOFTWARE\Policies\Microsoft\Windows\SYstem\Scripts定义的登录脚本
+	接下来userinit会启动操作系统的外壳程序(shell)。
+	它首先会在HKCU\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon表键中寻找shell键值，
+	如果没找到，则会在HKEY_LOCAL_MACHINE下寻找，默认情况下，shell键值的内容是explorer.exe
+33、昙花一现的用户桌面
+	这种可能是userinit失败了
+	使用!reg命令来观察注册表
+	!reg openkeys  "hklm\software\microsoft\windows nt\currentversion\winlogon"
+	!reg kcb e101a7a0
+	!reg kvalue 0x11111              
+	!reg cellindex 0x11111
+	du 1111111    显示键值 
+34、发起睡眠请求
+	以下两个aPI之一来发起睡眠请求：
+	BOOL WINAPI SetSystemPowerState(BOOL fSuspend, BOOL fForce);
+	BOOLEAN WINAPI SetSuspendState(BOOLEAN Hibernate, BOOLEAN ForceCritical, BOOLEAN DisableWakeEvent);
+	都是调用内核服务NtInitiatePowerAction来发起睡眠动作
+	NtInitiatePowerAction在确认当前线程具有SE_SHUTDOWN_NAME权限后，会以独占方式获取全局的电源策略锁(PopPolicyLock)，
+	以确保不会有多个线程同时执行睡眠过程，接下来，会调用PopSetPowerAction.
+	PopSetPowerAction将要采取的动作设置到一个名为PopAction的全局变量中，更新这个变量的内容。
+	然后它会调用PopCompleteAction来设置一个事件对象，唤醒电源策略工作线程PopPolicyWorkerThread。
+	电源策略工作线程开始工作后，它调用PopIssueActionRequest函数来处理防止PopAction结构中的任务。
+	“外调”窗口子系统
+	PopStateCalloutDispatch会遍历系统中的所有会话(session)，附加到每个会话，然后调用PopStateCallout所指向的函数，
+	这个函数指针指向的是UserPowerStateCallout函数，位于win32K.sys中。
+	UserPovweStateCallout被调用后，它会更新一个名为gPowerState的全局数据结构，然后调用QueuePowerRequest函数，
+	项win32K的电源任务队列(gPowerRequetList)中增加一项任务，
+	如果当前线程是窗口线程，那么QueuePowerRequest会调用xxxUserPowerCalloutWorker在当前线程中处理列表中的请求。
+	如果不是窗口线程，那么QueuePowerRequest会设置一个全局事件对象(gpEventPowerRequest)，让当前会话的windwos子系统服务器进程（csrss）来处理这个请求。
+	关闭显示器
+	win32k的xxxUserPowerStateCalloutWorker调用PowerOffMonitor来关闭显示器
+	询问应用程序
+	WM_POWERBROADCAST(0x218).PBT_APMQUERYSUSPEND(0)
+	Explorer进程发起睡眠请求后，UserPoverStateCallout调用QueuePovweRequest增加电源请求,然后执行xxxUserPovweStateCalloutWorker处理请求的过程，
+	xxxUserPoverStateCalloutWorker函数调用xxxSendMessageBSM来广播PBT_APMQUERYSUSPEND消息。
+	xxxSendMessageBSM会遍历所有窗口站和桌面，然后向所有顶层窗口发送消息。
+	通知应用程序
+	WM_POWERBROADCAST(0x218).PBT_APMSUSPEND(4)消息
+	通知系统服务
+	同上
+	通知执行体
+	NtSetSystemPowerState承担任务
+	调用电源状态回调函数
+	ExCreateCallback     创建一个回调对象
+	ExRegisterCallback 注册一个回调函数
+	ExunRegisterCallback 注销回调函数
+	系统内建了一个\callback\PowerState供各个模块注册回调函数，全局变量ExCbPowerState指向这个回调对象
+	冲转磁盘缓冲区
+	由PopFlushVolumes来实现，它调用PopFlushVolmeWorker函数逐一打开系统中的每个盘，然后调用ZwFlushBuffersFile冲转缓冲器，
+	而后再关闭磁盘对象
+	询问设备驱动程序
+	通过I/O管理器向其发送子类型为IRP_MN_QUERY_POWER的IRP
+	通知设备驱动程序
+	发送子类型为IRP_MN_SET_POWER的IRP
+	PopSleepDeviceList
+	调用硬件抽象层
+	执行x hal!*sleep* 列出Hal中与睡眠有关的函数
+	hal！HaliAcpiSleep hal向内核提供睡眠服务的接口函数
+	ba PopPowerStateHandlers    
+	PopTransitionToSleep通过PopInvokeSystemStateHandler调用登记在nt!PopPowerStateHandlers结构中的HaliAcpiSleep函数
+	关闭中断
+	在HaliAcpiSleep函数的起始部分，可以看到关闭中断的CLI指令
+	保存关键设备的硬件状态
+	HaliAcpiSleep调用HalpAcpiPreSleep来保存关键设备的硬件状态
+	HalpSuspendClock: 挂起HPET(高精度事件时钟)时钟
+	HalpSavePerFormanceCounter: 保存性能计数器
+	HalpSetClockBeforeSleep: 设置CMOS时钟
+	HalpSaveInterruptControllerState:保存中断控制器的状态
+	HalpSaveDmaControllerState: 保存DMA控制器的状态
+	启用唤醒事件
+	是ACPI驱动程序中的ACPIWakeEnableWakeEvents函数调用ACPIGpeEnableWakeEvents来设置通用事件寄存器
+	HalpAcpiPreSleep通过在全局变量Hal!PmAcpiDispatchTable中的ACPI分发表来找到和调用ACPIWakeEnableWakeEvents函数
+	维护NVS内存区
+	hal!HalpAcpiNvsData 记录着这个内存缓冲区的位置
+	设置唤醒向量
+	HalpSetupRealModeResume函数
+	保存休眠文件
+	将位于内存中的系统映像保存到休眠文件(Hiberfil.sys)的主要逻辑都位于PopWriteHiberImage函数中
+	给CPU下电
+35、跟踪让U盘入睡的过程
+	bp USBSTOR!USBSTOR_PdoSetPower
+	wt追踪运行细节
+36、计算机唤醒过程
+	给cpu上电
+	从固件转移到唤醒向量
+	返回到硬件抽象层
+	HalpAcpiPostSleep负责从唤醒向量那里接管执行权，在HalpPiix4Detect函数设置断点
+	HalpAcpiPostSleep内部执行的动作主要有：
+	调用HalpSetClockAfterSleep更新时间状态
+	调用HalpSetInterruptControllerWakeupState复位中断控制器
+	将唤醒向量清零
+	如果启用内核调试，调用KdRestore恢复内核调试
+	调用HalpRestoreDmaControllerState恢复DMA控制器状态
+	调用HalpTestoreTimerState恢复定时器状态
+	调用PmAcpiDispatchTable函数表中的电源事件管理函数，通常是ACPI驱动的ACPIGpeHalEnableDisableEvents函数；
+	调用HalpRestoreNvsArea函数恢复NVS内存区的内容，以便固件的唤醒代码可以读到睡眠前保存的内容
+	恢复处理器状态和驱动程序
+	PopInvokeSystemStateHandle调用的主要函数
+	cpu驱动程序(intelppm)的ProcessSystemSleepStateNotify函数
+	用于恢复特定CPU功能的KeRestoreProcessorSpecificFeatures函数
+	用于恢复扩展处理器状态的KeRestoreExtendedProcessorState函数
+	外调窗口子系统
+	调用PowerOnMonitor函数打开显示器，之后，windows子系统会向所有顶层窗口发送PBT_APMRESUMERUTOMATIC
+37、跟踪U盘唤醒过程
+	对USB的EHCI驱动程序的EHCI_RH_ClearFeaturePortSuspend函数设置断点
+38、托管程序
+	启动一个托管程序时，NTDLL中的加载器函数会动态地将mscoree!_CorExeMain函数更新为程序入口tt
+39、!heap       列出进程内的所有堆
+	!heap address -A      选择其中一个查看详情
+	!heap address -x      扩展命令会对堆块做解码
+40、帮助
+	.chain /D             显示加载的插件
+	!error 显示错误码含义
+	表达式
+	? a27-65e 评估宏汇编表达式
+	?? (unsigned int)-1073741819评估c++表达式
+	$$             注释符号
+	poi 取地址内容      dd poi(@ebp+8)
+	.expr 显示或改变表达式类型   .expr /s c++
+	n 设置数制 n 10
+	.formats   以多种格式显示数   .formats 80000001
+	调试会话
+	.create 创建新的进程并调试      .create notepad.exe
+	.attach 附加到指定进程 .attach 2568    $$2568是进程ID
+	.restart 让调试目标重新运行(用户态) .restart  .restart /F
+	.reboot 重启目标系统(内核态)     .reboot
+	.crash 强制目标系统崩溃(内核态) .crash
+	.detach 分离调试目标             .detach
+	q     终止调试                  q
+	模块和符号
+	.symfix 设置符号服务器           .symfix c:\symbols
+	.reload 刷新模块和符号           .reload   .reload /f ntfs.sys  .reload /user
+	ld 加载符号文件 ld kernel32
+	.sympath 显示或设置符号路径       .sympath    .sympath+ d:\work\debug
+	!sym           设置符号选项             !sym noisy  !sym quiet
+	.symopt 设置符号选项             .symopt+ 40   $$加载不严格匹配的PDB
+	x 显示符号   x winmine!* x ole32!*BindToObject
+	ln 搜索符号 ln aebc6eac  ln poi(0000001`400520b8)
+	lm 列模块或显示模块详情     lm vm urlmon lmD
+	!lmi 模块和PDB文件详情   !lmi nt
+	!dlls 动态库信息 !dlls -a
+	!imgreloc 模块的重定位信息         !imgreloc
+	!dh 观察PE文件头   !dh 76930000 -a
+	转储文件
+	.dump 产生转储文件             .dump /mfh c:\dumps\pdf\acrobat.dmp
+	!analyze 自动分析 !analyze -v
+	.writemem   将内存数据写到文件       .writemem c:\dumps\blog.txt 07288600 L2000
+	.bugcheck 显示蓝屏错误码 .bugcheck
+	adplus (脚本) 显示进程和自动转储   adplus -pn powerpnt.exe -pn wincmd32.exe -hang -o c:\test
+	进程
+	| 显示或切换进程(用户态)   |*  |2s
+	!process 显示进程(内核态)  !process 0 0 !process 0 0 powerpnt.exe  !process 8 1 !process 88bfbb80 2
+	!dml_proc 观察进程信息             !dml_proc $$ 以DML方式显示进程信息
+	.process 显示或切换进程(内核态)   .PROCESS /i 9382a530
+	.kill 杀进程 .kill 8adc85f0 $$参数为EPROCESS地址
+	!peb 观察进程环境块 !peb
+	dt 观察数据结构 dt nt!_EPROCESS dt ntdll!_PEB @$peb -r
+	.tlist 列进程 .tlsit $$列的是调试器所在系统的进程
+	线程
+	~ 显示线程 ~  ~*
+	切换线程 ~0s   $$0是线程序号   ~~[14d8]s $$14d8为线程ID
+	针对一个或多个线程执行命令  ~* kv1  ~*e ? @$tid;!gle   ~1 k
+	!teb 显示线程环境块           !teb
+	.thread 观察线程(内核态) !thread   !thread 9383a030
+	dt 观察数据结构   dt nt!_ETHREAD dt _TEB -y last dt _CONTEXT  dt _CONTEXT 0007fd30
+	!wow64exts.info 运行在64位系统的32位线程消息   !wow64exts.info
+	内存
+	!address 观察内存空间     !address
+	观察内存块属性 !address 0728988a
+	s 搜索内存数据 s -u 1000 L8000000 "当年在交大"
+	d 显示内存数据 dd e1c52ce0  da 00000000a4a9640 
+	dd @ebx l1   dd bc74ed08 l1 dd 805490c4+8 l1
+	dU /c 50 poi(0423ed44+8)    ds fc8d3528
+	du nt!NtInitialUserProcessBuffer  db 0xe17734ac+14
+	dt 按类型显示 dt _GUID 01f1b434  dt _EXCEPTION_POINTERS 74c97038 -r
+	e 编辑内存数据 ew 02c9ffcc $$按字(word)编辑02c9ffcc开始的内存
+	eb 001b5942-8 ff fe  eb f655cfb4 f655d7dc
+	!dd 读物理地址 !dd ffffffe0
+	!ed 写物理地址 !ed ffffffe0 80000000
+	!vtop 虚拟地址转换到物理地址   !vtop 0 bafde064
+	!pte 显示页表项 !pte f655cfb4
+	!memusage 显示物理内存使用情况     !memusage
+	!pool 显示内核池信息 !pool e326c000
+	!vad 观察进程的地址空间   !vad 8a760500
+	!sdbgext.hwnd 观察窗口句柄 !sdbgext.hwnd 001506c4
+	堆
+	!heap 显示堆信息 !heap 01670000 -A
+	dt 观察数据结构 !dt _heap_entry 0167fc10
+	!gflag 观察或者启用堆的调试支持 !gflag  !gflag +hpa
+	栈
+	K 函数调用序列 kn 100   kn   k =f655d7dc aebc3e5a aebc3e5a 99
+	.frame 切换当前栈帧 .frame /c c
+	dds 显示数据和符号 dds 80a056e0
+	dv 显示局部变量   dv -V
+	寄存器
+	r 读写寄存器 r cr3  recx=poi(ecx);r ecx; z(ecx!=0)
+	r cs, ds, es, fs, gs, ss   r cr2   r eip=0042d69e   
+	rdmsr 读MSR寄存器 rdmsr 19c
+	上下文
+	.ecxr 切换到异常上下文 .ecxr
+	.tss 切换到指定TSS .tss 28
+	.trap 切换到陷阱帧   .trap 8089a570
+	.effmach 切换32/64位上下文   .effmach x86    .effmach amd64
+	断点
+	bp 软件断点 bp KERNELBASE!CreateFileW+0x5 "dU /c 50 poi(@ebp+8);gu;r eax;
+	.if(@eax<0){.echo hit}.else{gc}"
+	bp KERNELBASE!CreateFileW+0x5 “dU /c 50 poi(@ebp+8);gc”
+	bp 'd4dtest!d4dtestdlg.cpp:196'
+	ba 硬件断点 ba w4 0006fc74
+	bm 成批设置断点 bm /a nt!Dbgk*
+	bd/be/bc/bl 管理断点 bl
+	执行
+	g 恢复执行 g           gu $$返回到父函数
+	p 单步执行 p    p "dv" $$单步后自动执行dv命令  pc $$单步到下一条call指令
+	t 单步跟踪           t  tc $$跟踪到下一条call指令 tb $$跟踪到下一条分支指令
+	wt 自动追踪 wt -1 3
+	反汇编
+	u 反汇编 u nt!PsGetCurrentProcessId
+	uf 反汇编整个函数 uf RtlLeaveCriticalSection
+	ub 反向反汇编 ub 773c78e9
+	a 汇编   a <地址>
+	死锁
+	!locks 扫描关键区(用户态)或ERESOURCE(内核态)  !locks
+	!cs 观察关键区 !cs -1
+	!alpc 观察ALPC端口 !alpc /m 9322a230
+	dt 观察数据结构 dt _RTL_CRITICAL_SECTION  dt _ERESOURCE  dt _KEVENT -r
+	处理器
+	!pcr 管理处理器控制区 !pcr
+	dg 观察段描述符 dg @fs
+	!idt 观察IDT表 !idt -a
+	!cpuid 显示CPU型号       !cpuid
+	!cpuinfo 显示CPU属性(内核态)     !cpuinfo
+	!irql 显示保存的IRQL !irql
+	dt 观察数据结构 !dt _KPCR
+	驱动程序
+	!drvobj 显示和观察驱动对象 !drvobj ser2pl
+	!devobj 观察设备对象 !devobj 85163500
+	!devstack 观察设备栈 !devstack 85163500
+	!devnode 观察设备节点 !devnode 0 1
+	!irp 观察IRP !irp 85163e70
+	dt 观察数据结构 dt _IO_StACK_LOCATION 85879d60
+	dt _IRP
+	dt _DRIVER_OBJECT
+	dt _DEVICE_OBJECT
+	!arbiter 显示资源分配情况 !arbiter 2 $$物理地址的分配情况
+	!pci 观察PCI空间 !pci ff 0 2 0 0 ff
+	!pcitree 显示PCI设备 !pcitree
+	ib/iw/id 读I/O端口 ib 510
+	ob/ow/od 写I/O端口 ob 510 0a
+	!amli AMLI调试器 !amli dns /s \_sb_.pci0.bat0
+	托管程序
+	.loadby 加载扩展命令模块 .loadby sos mscorwks
+	.load 加载扩展命令模块 .load clr10\sos.dll
+	!name2ee 显示名字对应的对象信息 !name2ee clihello CliHello.CliHello.Main
+	!ip2md 显示程序地址对应的方法描述 !ip2md 0x7ff 001c0dbd
+	!threads 观察线程的托管 !threads
+	!clrstack 托管栈回溯 !clrstack
+	!do 显示托管对象 !do 0000000002901750
+	!bpmd 设置断点 !bpmd CliHello CliHello.CliHello.Main
+	注册表
+	!reg 操作注册表 !reg openkeys "hklm\software\microsoft\windows nt\currentversion\winlogin"
+	!reg kcb e101a7a0
+	!reg kvalue 0xe17734ac
+	!reg cellindex 0xe1442920 721380
+	调试事件
+	sxe 配置调试事件 sxe ld:portabledeviceapi  sxd ld  sxe clr
+	gn 调试器不处理异常 gn
+	gh 调试器处理异常       gh
+	.lastevent 显示上一个调试事件的信息 .lastevent
+	远程调试
+	.server 将调试器升级为调试服务器 .server tcp:port=2000
+	
