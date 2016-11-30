@@ -10,7 +10,7 @@
         },
         {
             "name": "Linux",
-            "includePath": ["/usr/include", "D:/download/boost_1_57_0"],
+            "includePath": ["/usr/include", "D:/download/boost_1_57_0/"],
             "browse" : {
                 "limitSymbolsToIncludedHeaders" : true,
                 "databaseFilename" : ""
