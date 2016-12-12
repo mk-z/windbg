@@ -76,4 +76,5 @@ class MongoCache:
 
 
 if __name__ == '__main__':
-    link_crawler('http://example.webscraping.com/', '/(index|view)', cache=MongoCache())
+    cache1  = MongoCache(expires=timedelta(days=1))
+    link_crawler('http://example.webscraping.com/', '/(index|view)', cache=cache1)
