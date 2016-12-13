@@ -42,7 +42,7 @@ class MongoCache:
         #create collection to store cached webpages,
         # which is the equivalent of a table in a relational database
         self.db = self.client.cache
-        self.db.webpage.create_index('timestamp_1', expireAfterSeconds=expires.total_seconds())
+        self.db.webpage.create_index('timestamp', expireAfterSeconds=expires.total_seconds())
 
     def __contains__(self, url):
         try:
