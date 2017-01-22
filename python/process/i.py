@@ -10,7 +10,7 @@ def non_daemon():
         time.sleep(100)
 
 def non_daemon_break():
-    time.sleep(3)      #让他主动退出
+    time.sleep(3)      
 
 if __name__ == '__main__':
     f = []

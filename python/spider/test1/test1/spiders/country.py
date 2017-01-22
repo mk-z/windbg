@@ -23,4 +23,6 @@ class CountrySpider(CrawlSpider):
         i['name'] = response.css(name_css).extract()
         pop_css = 'tr#places_population__row td.w2p_fw::text'
         i['population'] = response.css(pop_css).extract()
+        self.log("name: %s" % i['name'])
+        self.log("population: %s" % i['population'])
         return i
