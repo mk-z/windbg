@@ -16,7 +16,7 @@ if __name__ == '__main__':
     f = []
     f.append(multiprocessing.Process(name='daemon', target=daemon))
     f.append(multiprocessing.Process(name='non-daemon', target=non_daemon))
-    f.append(multiprocessing.Process(name='non-daemon', target=non_daemon_break))
+    f.append(multiprocessing.Process(name='non-daemon-break', target=non_daemon_break))
 
     for i in f:
         i.daemon = True
