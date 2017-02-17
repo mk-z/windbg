@@ -1,5 +1,6 @@
 import multiprocessing
 import time
+import os
 
 def daemon():
     while 1:
@@ -21,5 +22,6 @@ if __name__ == '__main__':
     for i in f:
         i.daemon = True
         i.start()
-        while 1:
-            time.sleep(1)
+        //while 1:
+        //    time.sleep(1)
+    os.kill(os.getpid(), 15)

@@ -1,3 +1,6 @@
+#! python3
+# coding: utf-8
+
 import time
 import requests
 from concurrent.futures import ThreadPoolExecutor
