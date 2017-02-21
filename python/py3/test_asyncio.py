@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import asyncio
 
 NUMBERS = range(12)
-URL = 'http://httpbin.org/get?a={}'
+#URL = 'http://httpbin.org/get?a={}'
 
 def fetch(a):
     r = requests.get(URL.format(a))

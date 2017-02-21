@@ -5,8 +5,9 @@ import time
 import requests
 from concurrent.futures import ThreadPoolExecutor
 
-NUMBERS = range(12)
-URL = 'http://httpbin.org/get?a={}'
+NUMBERS = range(240)
+#URL = 'http://httpbin.org/get?a={}'
+URL = 'http://192.168.1.22:8000/get?a={}'
 
 def fetch(a):
     r = requests.get(URL.format(a))
